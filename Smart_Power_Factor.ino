@@ -1,6 +1,9 @@
+
 #include <ThingSpeak.h> //library thingspeak
 #include <WiFiEsp.h> //library WiFi ESP-01
 #include <PZEM004Tv30.h> //Library PZEM-004T-100A v3.0
+#include <Wire.h> //Library Wire
+#include <LiquidCrystal_I2C.h> //Library LCD
 #include "secrets.h"
 
 char ssid[] = SECRET_SSID;
@@ -9,7 +12,8 @@ int keyIndex = 0;
 
 WiFiEspClient client;
 PZEM004Tv30 pzem(11, 12); //Rx Tx PZEM
-//SoftwareSerial Serial1(19,18); //Rx Tx WiFi ESP-01
+LiquidCrystal_I2C lcd(0x27, 20, 4);
+
 #ifndef HAVE_HWSERIAL1
 #define ESP_BAUDRATE  19200
 #else
@@ -21,6 +25,8 @@ const char * myWriteAPIKey = SECRET_WRITE_APIKEY;
 
 void setup() {
   Serial.begin(115200);
+  lcd.begin();
+  lcd.backlight();
   while(!Serial){
     ;
   }
@@ -51,39 +57,51 @@ void loop() {
   }
   float voltage = pzem.voltage();
   if(voltage != NAN){
-  Serial.print("Voltage: "); Serial.print(voltage); Serial.println("V");
+  Serial.print("Tegangan: "); Serial.print(voltage); Serial.println("V");
+  lcd.setCursor(0, 0);
+  lcd.print("Tegangan: "); lcd.print(voltage); 
   } else {
   Serial.println("Error reading voltage");
+  lcd.println("Error reading voltage");
   }
   float current = pzem.current();
   if(current != NAN){
-  Serial.print("Current: "); Serial.print(current); Serial.println("A");
+  Serial.print("Arus: "); Serial.print(current); Serial.println("A");
+  lcd.setCursor(0, 1);
+  lcd.print("Arus    : "); lcd.print(current); 
   } else {
   Serial.println("Error reading current");
+  lcd.println("Error reading current");
   }
   float power = pzem.power();
   if(current != NAN){
-  Serial.print("Power: "); Serial.print(power); Serial.println("W");
+  Serial.print("Daya: "); Serial.print(power); Serial.println("W");
+  lcd.setCursor(0, 2);
+  lcd.print("Daya    : "); lcd.print(power); 
   } else {
   Serial.println("Error reading power");
+  lcd.println("Error reading power");
   }
-  float energy = pzem.energy();
-  if(current != NAN){
-  Serial.print("Energy: "); Serial.print(energy,3); Serial.println("kWh");
-  } else {
-  Serial.println("Error reading energy");
-  }
-  float frequency = pzem.frequency();
-  if(current != NAN){
-  Serial.print("Frequency: "); Serial.print(frequency, 1); Serial.println("Hz");
-  } else {
-  Serial.println("Error reading frequency");
-  }
+//  float energy = pzem.energy();
+//  if(current != NAN){
+//  Serial.print("Energy: "); Serial.print(energy,3); Serial.println("kWh");
+//  } else {
+//  Serial.println("Error reading energy");
+//  }
+//  float frequency = pzem.frequency();
+//  if(current != NAN){
+//  Serial.print("Frequency: "); Serial.print(frequency, 1); Serial.println("Hz");
+//  } else {
+//  Serial.println("Error reading frequency");
+//  }
   float pf = pzem.pf();
   if(current != NAN){
   Serial.print("PF: "); Serial.println(pf);
+  lcd.setCursor(0, 3);
+  lcd.print("PF      : "); lcd.print(pf);
   } else {
   Serial.println("Error reading power factor");
+  lcd.println("Error reading power factor");
   }
   Serial.println();
   delay(2000);
@@ -91,8 +109,8 @@ void loop() {
   ThingSpeak.setField(1,(float)voltage);
   ThingSpeak.setField(2,(float)current);
   ThingSpeak.setField(3,(float)power);
-  ThingSpeak.setField(4,(float)energy);
-  ThingSpeak.setField(5,(float)frequency);
+//  ThingSpeak.setField(4,(float)energy);
+//  ThingSpeak.setField(5,(float)frequency);
   ThingSpeak.setField(6,(float)pf);
   int x = ThingSpeak.writeFields(myChannelNumber, myWriteAPIKey);
   if(x == 200){
@@ -100,7 +118,7 @@ void loop() {
   }else{
     Serial.println("Terjadi Masalah teknis." +String(x));
   }
-  delay(15000);
+  delay(3000);
 }
 
 void setEspBaudRate(unsigned long baudrate){
